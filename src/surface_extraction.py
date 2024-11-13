@@ -12,11 +12,18 @@ import seaborn as sns
 import sys
 import cupy as cp
 
-def smooth_image_in_xyz(image, size):
-    image = cp.array(image)
-    smoothed = median_filter(image.astype(int), size=(size, size, size))
+
+def binarize_image(image, window_size, C):
+    #gaussian = gaussian_filter(cp.array(image), size=(1, 1, 1))
+    image = image / np.max(image)
+    image *= 255
+    image = cp.array(image.astype(np.uint8)) 
+    
+    blurred = gaussian_filter(image, sigma=(window_size, window_size, window_size))
+    thresholded = cp.where(image > (blurred + C), 255, 0)
     del image
-    return smoothed
+    del blurred
+    return thresholded
 
 
 def get_biggest_connected_component(binary_image):
@@ -35,6 +42,7 @@ def get_morph_gradient(biggest_connected_volume):
     kernel[:,1,1] = 1
     kernel[1,:,1] = 1
     morph_grad = morphological_gradient(biggest_connected_volume.astype(int), structure=kernel)
+    del biggest_connected_volume
     return morph_grad
 
 
@@ -63,24 +71,25 @@ def get_top_layer(morph_grad, img_shape, bottom=False):
         return bottom_layer_3d
 
 
-def expand_labels_on_morph(morph_grad, img_shape):
+def expand_labels_on_morph(morph_grad, img_shape, z_expansion):
     labels = get_top_layer(morph_grad, img_shape, bottom=False) + 2 * get_top_layer(morph_grad, img_shape, bottom=True)
-    expanded_labels = expand_labels(cp.asnumpy(labels), distance=20, spacing=(10, 1, 1)) # this corresponds to expanding by 2 in z dimension and by 20 in x and y dimensions, so it should definetely cover all pertrusions
+    distance = 20
+    expanded_labels = expand_labels(cp.asnumpy(labels), distance=20, spacing=(distance/z_expansion, 1, 1)) # this corresponds to expanding by 2 in z dimension and by 20 in x and y dimensions, so it should definetely cover all pertrusions
     expanded_labels_on_morph = cp.array(expanded_labels == 1).astype(int) * (morph_grad == np.max(morph_grad))
+    del morph_grad
     return expanded_labels_on_morph
 
 
-def process_patch(image, binarization_threshold=6):
-    smoothed_image = smooth_image_in_xyz(image, size=5)
-    binary_image = smoothed_image > binarization_threshold
-    del smoothed_image
-
+def process_patch(image, window_size, C, z_expansion):
+    print("binarizing")
+    binary_image = binarize_image(image, window_size=window_size, C=C)
+    print("extracting the biggest connected component")
     biggest_connected_volume = get_biggest_connected_component(binary_image)
     shape_3d = biggest_connected_volume.shape
+    print("caluclating the morphological gradient")
     morph_grad = get_morph_gradient(biggest_connected_volume)
-    surface = expand_labels_on_morph(morph_grad, shape_3d)
-    del morph_grad
-    del biggest_connected_volume
+    print("assigning labels to gradient")
+    surface = expand_labels_on_morph(morph_grad, shape_3d, z_expansion)
     return cp.asnumpy(surface)
     
 

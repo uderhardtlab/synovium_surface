@@ -1,4 +1,7 @@
 {
-    "data": "/data_nfs/je30bery/synovium_surface/data/",
-    "CD44": "/data_nfs/je30bery/synovium_surface/data/C4-2024-08-20_LysM-Cre flox-tdTom synovium_stitched_CD44.tif"
+    "data": "/data_nfs/je30bery/synovium_surface/data/exp2",
+    "CD44": "/data_nfs/je30bery/synovium_surface/data/exp2/2024-09-11_LysMtom-knee_decon_ch01.tif",
+    "window_size": 10,
+    "C": 5,
+    "z_expansion": 2
 }
