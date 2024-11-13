@@ -12,6 +12,10 @@ import seaborn as sns
 import sys
 import cupy as cp
 
+def write_tiff(configs, name, img):
+    scaled = 255 * (img / np.max(img))
+    tf.imwrite(os.path.join(configs["data"], name), scaled.astype(np.uint8),  metadata={'axes': "ZYX"})
+
 
 def binarize_image(image, window_size, C):
     #gaussian = gaussian_filter(cp.array(image), size=(1, 1, 1))
