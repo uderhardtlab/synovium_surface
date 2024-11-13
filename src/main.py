@@ -2,8 +2,7 @@ import numpy as np
 import json
 import tifffile as tf
 import sys
-sys.path.append("../../network_extraction/src/")
-from real_data import write_tiff
+
 sys.path.append("../src/")
 from surface_extraction import *
 
